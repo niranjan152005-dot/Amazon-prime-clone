@@ -4,6 +4,7 @@ import express from 'express'
 const app = express(); const port = process.env.PORT || 5000
 const users = new Map([['demo@amazon.com', { email: 'demo@amazon.com', password: 'password' }]])
 app.use(express.json())
+app.use((request, response, next) => { response.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || '*'); response.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); response.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS'); next() })
 app.post('/api/auth/signup', (request, response) => { const { email, password } = request.body; const normalizedEmail = email.trim().toLowerCase(); if (users.has(normalizedEmail)) return response.status(409).json({ message: 'An account with this email already exists.' }); users.set(normalizedEmail, { email: normalizedEmail, password }); return response.status(201).json({ user: { email: normalizedEmail } }) })
 app.post('/api/auth/login', (request, response) => { const { email, password } = request.body; const user = users.get(email.trim().toLowerCase()); if (!user || user.password !== password) return response.status(401).json({ message: 'The email or password is incorrect.' }); return response.json({ user: { email: user.email } }) })
 app.get('/api/content/:category', async (request, response) => {
