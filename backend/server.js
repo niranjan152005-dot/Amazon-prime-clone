@@ -33,4 +33,6 @@ app.get('/api/content/:category', async (request, response) => {
 })
 
 app.get('/api/movies', (request, response) => response.redirect('/api/content/movies'))
-app.listen(port, () => console.log(`Amazon clone API listening on http://localhost:${port}`))
+if (!process.env.VERCEL) app.listen(port, () => console.log(`Amazon clone API listening on http://localhost:${port}`))
+
+export default app
