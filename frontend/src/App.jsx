@@ -4,6 +4,15 @@ import './App.css'
 const initialForm = { email: '', password: '' }
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
+async function readApiResponse(response) {
+	const body = await response.text()
+	try {
+		return { response, data: JSON.parse(body) }
+	} catch {
+		throw new Error(response.ok ? 'The server returned an invalid response.' : `Server error (${response.status}). Check the Vercel API routing.`)
+	}
+}
+
 function App() {
 	const [screen, setScreen] = useState('login')
 	const [form, setForm] = useState(initialForm)
@@ -17,8 +26,8 @@ function App() {
 		if (!form.email.includes('@') || form.password.length < 6) return setMessage('Use a valid email and a password with at least 6 characters.')
 		setLoading(true)
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/auth/${screen}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
-			const data = await response.json(); if (!response.ok) throw new Error(data.message || 'Something went wrong.')
+			const { response, data } = await fetch(`${API_BASE_URL}/api/auth/${screen}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) }).then(readApiResponse)
+			if (!response.ok) throw new Error(data.message || 'Something went wrong.')
 			setUser(data.user); setScreen('dashboard'); setForm(initialForm)
 		} catch (error) {
 			setMessage(error.message === 'Failed to fetch' ? 'Cannot reach the server. Start the backend with "npm run dev" from the backend folder.' : error.message)
@@ -46,7 +55,7 @@ function Dashboard({ user, onSignOut }) {
 	const [selectedMovie, setSelectedMovie] = useState(null)
 	useEffect(() => {
 		const category = page === 'Movies' || page === 'Home' ? 'movies' : 'tv'
-		fetch(`${API_BASE_URL}/api/content/${category}`).then((response) => response.json().then((data) => ({ response, data }))).then(({ response, data }) => { if (!response.ok) throw new Error(data.message || 'Unable to load titles.'); setMovies(data.results || []); setError(''); setLoadedPage(page) }).catch((requestError) => { setError(requestError.message); setLoadedPage(page) }).finally(() => setLoading(false))
+		fetch(`${API_BASE_URL}/api/content/${category}`).then(readApiResponse).then(({ response, data }) => { if (!response.ok) throw new Error(data.message || 'Unable to load titles.'); setMovies(data.results || []); setError(''); setLoadedPage(page) }).catch((requestError) => { setError(requestError.message); setLoadedPage(page) }).finally(() => setLoading(false))
 	}, [page])
 	const navigate = (nextPage) => { setSelectedMovie(null); setPage(nextPage); window.scrollTo({ top: 0, behavior: 'smooth' }) }
 	const visibleMovies = page === 'Movies' ? movies : movies.slice(0, 6)
